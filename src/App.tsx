@@ -1,26 +1,89 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { 
+  createContext,
+  useContext, 
+  FC, 
+  useState,
+  PropsWithChildren,
+  useCallback, 
+  useMemo, 
+  CSSProperties,
+} from 'react'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+interface Theme {
+  color: string;
+  background: string;
 }
 
-export default App;
+type AvailableThemes = 'light' | 'dark'
+
+const themes: Record<AvailableThemes, CSSProperties> = {
+  light: {
+    color: '#000000',
+    background: '#eeeeee'
+  },
+  dark: {
+    color: '#ffffff',
+    background: '#222222'
+  },
+}
+
+const ThemeContext = createContext<{
+  theme: CSSProperties,
+  toggle: () => void,
+  setTheme?: (t: AvailableThemes) => void
+}>({
+  theme: themes.dark,
+  toggle: () => {},
+})
+
+
+const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
+  const [currentTheme, setCurrentTheme] = useState<AvailableThemes>('dark')
+
+  const toggle = useCallback<() => void>(() => {
+    setCurrentTheme(currentTheme === 'dark' ? 'light' : 'dark')
+  }, [currentTheme])
+
+  const setTheme = useCallback<(theme: AvailableThemes) => void>((theme) => {
+    setCurrentTheme(theme)
+  }, [])
+
+  const memoizedTheme = useMemo<CSSProperties>(() => {
+    return themes[currentTheme]
+  }, [currentTheme])
+
+  return (
+    <ThemeContext.Provider value={{
+      toggle,
+      setTheme,
+      theme: memoizedTheme,
+    }}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+
+const Hooks: FC = () => {
+  const { theme, toggle } = useContext(ThemeContext)
+
+  return (
+    <div style={{maxWidth: '1200px', margin: '0 auto', padding: '2rem 0'}}>
+      <button
+        onClick={toggle}
+        style={{background: theme.background, color: theme.color}}
+      >
+        My beautiful button
+      </button>
+    </div>
+  )
+}
+
+const App: FC = () => (
+  <div>
+    <ThemeProvider>
+      <Hooks />
+    </ThemeProvider>
+  </div>
+)
+
+export default App
